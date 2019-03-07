@@ -6,15 +6,27 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 find_package(catkin REQUIRED COMPONENTS roscpp)
 find_package(Boost REQUIRED COMPONENTS system thread)
 
+# clone firmware submodule if it is missing
+set(FIRMWARE_SUBMODULE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/firmware")
+if(NOT EXISTS "${FIRMWARE_SUBMODULE_DIR}/.git")
+  message(STATUS "Firmware submodule not found at ${FIRMWARE_SUBMODULE_DIR}")
+  execute_process(
+    COMMAND git submodule update --init --recursive
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+endif()
+
 set(FIRMWARE_INCLUDE_DIRS
   firmware/include/
   firmware/lib/
+  firmware/comms/
 )
 
 catkin_package(
   INCLUDE_DIRS include ${FIRMWARE_INCLUDE_DIRS}
   LIBRARIES rosflight_firmware rosflight_udp_board
   CATKIN_DEPENDS roscpp
+  CFG_EXTRAS rosflight_firmware-extras.cmake
 )
 
 include_directories(include)
@@ -32,10 +44,11 @@ add_library(rosflight_firmware
   firmware/src/rc.cpp
   firmware/src/command_manager.cpp
   firmware/src/sensors.cpp
-  firmware/src/mavlink.cpp
+  firmware/src/comm_manager.cpp
 
-  firmware/lib/turbotrig/turbotrig.cpp
-  firmware/lib/turbotrig/turbovec.cpp
+  firmware/comms/mavlink/mavlink.cpp
+
+  firmware/lib/turbomath/turbomath.cpp
 )
 
 add_library(rosflight_udp_board
